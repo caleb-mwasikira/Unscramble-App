@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/default_padding"
-        tools:context=".ui.game.GameFragment">
+        tools:context=".fragments.GameFragment">
 
         <Button
             android:id="@+id/skip"
@@ -113,7 +113,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:inputType="textPersonName|textNoSuggestions"
-                android:maxLines="1" />
+                android:maxLines="1"
+                android:textColorHint="#757575" />
         </com.google.android.material.textfield.TextInputLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

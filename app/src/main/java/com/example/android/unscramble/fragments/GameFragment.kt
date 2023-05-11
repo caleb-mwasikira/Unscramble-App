@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.example.android.unscramble.ui.game
+package com.example.android.unscramble.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+//import android.util.Log
 import androidx.fragment.app.Fragment
 import com.example.android.unscramble.R
 import com.example.android.unscramble.databinding.GameFragmentBinding
@@ -31,8 +32,15 @@ class GameFragment : Fragment() {
 
     private var score = 0
     private var currentWordCount = 0
+    private var currentWord = "test"
     private var currentScrambledWord = "test"
+    private var _words: List<String>? = null
+    private val words get() = _words!!
 
+    companion object {
+        const val MAX_NO_OF_WORDS = 10
+        const val SCORE_INCREASE = 20
+    }
 
     // Binding object instance with access to the views in the game_fragment.xml layout
     private lateinit var binding: GameFragmentBinding
@@ -42,9 +50,11 @@ class GameFragment : Fragment() {
     // first fragment
 
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
+        _words = context?.resources?.getStringArray(R.array.words)?.toList()
+
         // Inflate the layout XML file and return a binding object instance
         binding = GameFragmentBinding.inflate(inflater, container, false)
         return binding.root
@@ -56,11 +66,13 @@ class GameFragment : Fragment() {
         // Setup a click listener for the Submit and Skip buttons.
         binding.submit.setOnClickListener { onSubmitWord() }
         binding.skip.setOnClickListener { onSkipWord() }
+
         // Update the UI
         updateNextWordOnScreen()
         binding.score.text = getString(R.string.score, 0)
         binding.wordCount.text = getString(
-                R.string.word_count, 0, MAX_NO_OF_WORDS)
+            R.string.word_count, 0, MAX_NO_OF_WORDS
+        )
     }
 
     /*
@@ -68,13 +80,23 @@ class GameFragment : Fragment() {
     * Displays the next scrambled word.
     */
     private fun onSubmitWord() {
-        currentScrambledWord = getNextScrambledWord()
-        currentWordCount++
-        score += SCORE_INCREASE
-        binding.wordCount.text = getString(R.string.word_count, currentWordCount, MAX_NO_OF_WORDS)
-        binding.score.text = getString(R.string.score, score)
-        setErrorTextField(false)
-        updateNextWordOnScreen()
+        val usersGuess: String = binding.textInputEditText.text.toString()
+        // Log.i("Game: User's Guess", usersGuess)
+        // Log.i("Game: Scrambled Word", currentScrambledWord)
+        // Log.i("Game: Actual Word", currentWord)
+
+        if (usersGuess == currentWord) {
+            // User got the scrambled word correct
+            score += SCORE_INCREASE
+            binding.score.text = getString(R.string.score, score)
+            currentScrambledWord = getNextScrambledWord()
+            binding.wordCount.text =
+                getString(R.string.word_count, currentWordCount, MAX_NO_OF_WORDS)
+            setErrorTextField(false)
+            updateNextWordOnScreen()
+        } else {
+            setErrorTextField(true)
+        }
     }
 
     /*
@@ -83,28 +105,22 @@ class GameFragment : Fragment() {
      */
     private fun onSkipWord() {
         currentScrambledWord = getNextScrambledWord()
-        currentWordCount++
         binding.wordCount.text = getString(R.string.word_count, currentWordCount, MAX_NO_OF_WORDS)
         setErrorTextField(false)
         updateNextWordOnScreen()
     }
 
     /*
-     * Gets a random word for the list of words and shuffles the letters in it.
+     * Increments the currentWordCount and gets a random word
+     * from the list of words shuffling the letters within it.
      */
     private fun getNextScrambledWord(): String {
-        val tempWord = allWordsList.random().toCharArray()
+        currentWordCount++
+
+        currentWord = words.random().toString()
+        val tempWord = currentWord.toCharArray()
         tempWord.shuffle()
         return String(tempWord)
-    }
-
-    /*
-     * Re-initializes the data in the ViewModel and updates the views with the new data, to
-     * restart the game.
-     */
-    private fun restartGame() {
-        setErrorTextField(false)
-        updateNextWordOnScreen()
     }
 
     /*
@@ -131,6 +147,9 @@ class GameFragment : Fragment() {
      * Displays the next scrambled word on screen.
      */
     private fun updateNextWordOnScreen() {
+        if (currentWordCount == MAX_NO_OF_WORDS)
+            exitGame()
+
         binding.textViewUnscrambledWord.text = currentScrambledWord
     }
 }
