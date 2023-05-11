@@ -20,7 +20,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-//import android.util.Log
 import androidx.fragment.app.Fragment
 import com.example.android.unscramble.R
 import com.example.android.unscramble.databinding.GameFragmentBinding
@@ -40,6 +39,10 @@ class GameFragment : Fragment() {
     companion object {
         const val MAX_NO_OF_WORDS = 10
         const val SCORE_INCREASE = 20
+        const val KEY_SCORE = "score"
+        const val KEY_CURRENT_WORD_COUNT = "currentWordCount"
+        const val KEY_CURRENT_WORD = "currentWord"
+        const val KEY_CURRENT_SCRAMBLED_WORD = "currentScrambledWord"
     }
 
     // Binding object instance with access to the views in the game_fragment.xml layout
@@ -48,6 +51,27 @@ class GameFragment : Fragment() {
     // Create a ViewModel the first time the fragment is created.
     // If the fragment is re-created, it receives the same GameViewModel instance created by the
     // first fragment
+
+    // Saving application data across Activity lifecycles
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        outState.putInt(KEY_SCORE, score)
+        outState.putInt(KEY_CURRENT_WORD_COUNT, currentWordCount)
+        outState.putString(KEY_CURRENT_WORD, currentWord)
+        outState.putString(KEY_CURRENT_SCRAMBLED_WORD, currentScrambledWord)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        savedInstanceState?.let { savedState ->
+            score = savedState.getInt(KEY_SCORE, 0)
+            currentWordCount = savedState.getInt(KEY_CURRENT_WORD_COUNT, 0)
+            currentWord = savedState.getString(KEY_CURRENT_WORD, "test")
+            currentScrambledWord = savedState.getString(KEY_CURRENT_SCRAMBLED_WORD, "test")
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -69,9 +93,9 @@ class GameFragment : Fragment() {
 
         // Update the UI
         updateNextWordOnScreen()
-        binding.score.text = getString(R.string.score, 0)
+        binding.score.text = getString(R.string.score, score)
         binding.wordCount.text = getString(
-            R.string.word_count, 0, MAX_NO_OF_WORDS
+            R.string.word_count, currentWordCount, MAX_NO_OF_WORDS
         )
     }
 
@@ -81,9 +105,6 @@ class GameFragment : Fragment() {
     */
     private fun onSubmitWord() {
         val usersGuess: String = binding.textInputEditText.text.toString()
-        // Log.i("Game: User's Guess", usersGuess)
-        // Log.i("Game: Scrambled Word", currentScrambledWord)
-        // Log.i("Game: Actual Word", currentWord)
 
         if (usersGuess == currentWord) {
             // User got the scrambled word correct
