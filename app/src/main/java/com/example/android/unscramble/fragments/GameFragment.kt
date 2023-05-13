@@ -53,22 +53,14 @@ class GameFragment : Fragment() {
         words = requireActivity().resources.getStringArray(R.array.words).toList()
         viewModel = ViewModelProvider(this, GameViewModelFactory(words))[GameViewModel::class.java]
 
+        // Data binding; initializing layout variables
+        binding.gameViewModel = viewModel
+        binding.maxNoOfWords = GameViewModel.MAX_NO_OF_WORDS
+        binding.lifecycleOwner = viewLifecycleOwner
+
         // Setup a click listener for the Submit and Skip buttons.
         binding.submit.setOnClickListener { onSubmitWord() }
         binding.skip.setOnClickListener { onSkipWord() }
-
-        // Attach observers to the score, word count and scrambled word LiveData objects
-        viewModel.score.observe(viewLifecycleOwner) { newScore ->
-            binding.score.text = getString(R.string.score, newScore)
-        }
-        viewModel.currentWordCount.observe(viewLifecycleOwner) { newWordCount ->
-            binding.wordCount.text = getString(
-                R.string.word_count, newWordCount, GameViewModel.MAX_NO_OF_WORDS
-            )
-        }
-        viewModel.currentScrambledWord.observe(viewLifecycleOwner) { newScrambledWord ->
-            binding.textViewUnscrambledWord.text = newScrambledWord
-        }
     }
 
     /*
