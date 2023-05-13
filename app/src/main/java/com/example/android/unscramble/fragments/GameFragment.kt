@@ -21,8 +21,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import com.example.android.unscramble.GameViewModel
+import com.example.android.unscramble.GameViewModelFactory
 import com.example.android.unscramble.R
 import com.example.android.unscramble.databinding.GameFragmentBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -35,11 +36,8 @@ class GameFragment : Fragment() {
     // Binding object instance with access to the views in the game_fragment.xml layout
     private lateinit var binding: GameFragmentBinding
 
-    // Create a ViewModel the first time the fragment is created.
-    // If the fragment is re-created, it receives the same GameViewModel instance created by the
-    // first fragment
-    private val viewModel: GameViewModel by viewModels()
-
+    private lateinit var words: List<String>
+    private lateinit var viewModel: GameViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -52,12 +50,25 @@ class GameFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        words = requireActivity().resources.getStringArray(R.array.words).toList()
+        viewModel = ViewModelProvider(this, GameViewModelFactory(words))[GameViewModel::class.java]
+
         // Setup a click listener for the Submit and Skip buttons.
         binding.submit.setOnClickListener { onSubmitWord() }
         binding.skip.setOnClickListener { onSkipWord() }
 
-        // Update the UI
-        updateUI()
+        // Attach observers to the score, word count and scrambled word LiveData objects
+        viewModel.score.observe(viewLifecycleOwner) { newScore ->
+            binding.score.text = getString(R.string.score, newScore)
+        }
+        viewModel.currentWordCount.observe(viewLifecycleOwner) { newWordCount ->
+            binding.wordCount.text = getString(
+                R.string.word_count, newWordCount, GameViewModel.MAX_NO_OF_WORDS
+            )
+        }
+        viewModel.currentScrambledWord.observe(viewLifecycleOwner) { newScrambledWord ->
+            binding.textViewUnscrambledWord.text = newScrambledWord
+        }
     }
 
     /*
@@ -69,10 +80,7 @@ class GameFragment : Fragment() {
 
         if (viewModel.isUsersGuessCorrect(usersGuess)) {
             setErrorTextField(false)
-            if (viewModel.nextWord()) {
-                updateUI()
-            } else {
-                updateUI()
+            if (!viewModel.nextWord()) {
                 showFinalScoreDialog()
             }
         } else {
@@ -87,7 +95,6 @@ class GameFragment : Fragment() {
     private fun onSkipWord() {
         if (viewModel.nextWord()) {
             setErrorTextField(false)
-            updateUI()
         } else {
             showFinalScoreDialog()
         }
@@ -100,7 +107,6 @@ class GameFragment : Fragment() {
     private fun restartGame() {
         viewModel.reinitializeData()
         setErrorTextField(false)
-        updateUI()
     }
 
     /*
@@ -123,21 +129,9 @@ class GameFragment : Fragment() {
         }
     }
 
-    /*
-     * Updates the user interface, setting new values for
-     * scrambled word, word count and score
-     */
-    private fun updateUI() {
-        binding.textViewUnscrambledWord.text = viewModel.currentScrambledWord
-        binding.wordCount.text = getString(
-            R.string.word_count, viewModel.currentWordCount, GameViewModel.MAX_NO_OF_WORDS
-        )
-        binding.score.text = getString(R.string.score, viewModel.score)
-    }
-
     private fun showFinalScoreDialog() {
         MaterialAlertDialogBuilder(requireContext()).setTitle(getString(R.string.congratulations))
-            .setMessage(getString(R.string.you_scored, viewModel.score)).setCancelable(false)
+            .setMessage(getString(R.string.you_scored, viewModel.score.value)).setCancelable(false)
             .setNegativeButton(getString(R.string.exit)) { _, _ ->
                 exitGame()
             }.setPositiveButton(getString(R.string.play_again)) { _, _ ->
